@@ -11,15 +11,21 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 # path to locally stored dataset
 # TRAINING DATASET: STAR Dataset, https://zenodo.org/records/15690078 
 TRAIN_DATASET_PATH = "D:\\Downloads\\STAR_Drums_full\\STAR_publication\\data\\training"
+VALIDATION_DATASET_PATH = "D:\\Downloads\\STAR_Drums_full\\STAR_publication\\data\\validation"
+TEST_DATASET_PATH = "D:\\Downloads\\STAR_Drums_full\\STAR_publication\\data\\test"
 
 # Audio global parameters
 AUDIO_FILE_DURATION = 60 #seconds
 SR = 22050
-HOP_LENGTH = 256   # hop_length is ~10 seconds time resolution
+HOP_LENGTH = 256   # hop_length is ~10 ms time resolution
 N_MELS = 80        # standard, captures enough spectral detail
-N_FFT = 1024       # ~46ms time resolution, 21Hz freq resolution, TODO if too low increase to 2048 
+N_FFT = 2048        # ~46 ms time resolution, 21Hz freq resolution, TODO if too low increase to 2048 
 
-CACHE_PATH = f"cache_sr{SR}_hop{HOP_LENGTH}_nfft{N_FFT}_mels{N_MELS}"
+
+PRECOMPUTED_FEATURES_FOLDER = "precomputed_features"
+TRAIN_FEATURES = os.path.join(PRECOMPUTED_FEATURES_FOLDER, f"sr{SR}_hop{HOP_LENGTH}_nfft{N_FFT}_mels{N_MELS}", "train")
+VALIDATION_FEATURES = os.path.join(PRECOMPUTED_FEATURES_FOLDER, f"sr{SR}_hop{HOP_LENGTH}_nfft{N_FFT}_mels{N_MELS}", "validation")
+TEST_FEATURES = os.path.join(PRECOMPUTED_FEATURES_FOLDER, f"sr{SR}_hop{HOP_LENGTH}_nfft{N_FFT}_mels{N_MELS}", "test")
 
 # Map STAR classes to only Three classes: Kick, Snare, Hi-hat
 # see https://transactions.ismir.net/articles/244/files/6888ab991b2f2.pdf page 255 for reference to names mapping
@@ -123,7 +129,7 @@ def extract_windows(features, labels, context=7): # used to provide chunks of fr
     return X, labels
 
 
-def load_single_track(args):
+def extract_features_and_labels(args):
     """
     Extract features and labels from single track
     """
@@ -154,7 +160,35 @@ def load_single_track(args):
     except Exception as e:
         print(f"Error processing {file}: {e}")
         return None
+    
+def load_tracks(train_annotations_path, train_audios_path, max_elements=None, n_workers=4):
+    annotation_files = sorted(os.listdir(train_annotations_path))
 
+    if max_elements is not None:
+        annotation_files = annotation_files[:max_elements]
+
+    # build args list for each worker
+    args_list = [
+        (file, train_audios_path, train_annotations_path)
+        for file in annotation_files
+    ]
+
+    tracks = []
+    completed = 0
+
+    with ProcessPoolExecutor(max_workers=n_workers) as executor:
+        futures = {executor.submit(extract_features_and_labels, args): args[0] 
+                   for args in args_list}
+        
+        for future in as_completed(futures):
+            result = future.result()
+            completed += 1
+            if result is not None:
+                tracks.append(result)
+            if completed % 100 == 0:
+                print(f"Loaded {completed}/{len(annotation_files)} tracks")
+
+    return tracks
 
 def load_training_data(max_elements: int = None, n_workers: int = 4, load_if_available: bool = True):
     """
@@ -170,49 +204,37 @@ def load_training_data(max_elements: int = None, n_workers: int = 4, load_if_ava
 
     """
 
-    """"""
-
-    if load_if_available and os.path.exists(CACHE_PATH) and len(os.listdir(CACHE_PATH)) > 0:
+    if load_if_available and os.path.exists(TRAIN_FEATURES) and len(os.listdir(TRAIN_FEATURES)) > 0:
         print("Cache found, loading from disk...")
-        tracks = load_tracks_from_cache(CACHE_PATH)
+        tracks = load_tracks_from_cache(TRAIN_FEATURES)
         if max_elements is not None:
             tracks = tracks[:max_elements]
         return tracks
 
+    # extract train features
+    train_audios_path = os.path.join(TRAIN_DATASET_PATH, "ismir04\\audio\\mix")
+    train_annotations_path = os.path.join(TRAIN_DATASET_PATH, "ismir04\\annotation")
+    
+    train_tracks = load_tracks(train_annotations_path, train_audios_path, max_elements=max_elements, n_workers=n_workers)
 
+    # extract validation features
+    validation_audios_path = os.path.join(VALIDATION_DATASET_PATH, "audio\\mix")
+    validation_annotations_path = os.path.join(VALIDATION_DATASET_PATH, "annotation")
+    
+    validation_tracks = load_tracks(validation_annotations_path, validation_audios_path, max_elements=max_elements, n_workers=n_workers)
 
-    audio_files_path = os.path.join(TRAIN_DATASET_PATH, "ismir04\\audio\\mix")
-    annotation_files_path = os.path.join(TRAIN_DATASET_PATH, "ismir04\\annotation")
-    annotation_files = sorted(os.listdir(annotation_files_path))
+    #extract test features
+    test_audios_path = os.path.join(TEST_DATASET_PATH, "audio\\mix")
+    test_annotations_path = os.path.join(TEST_DATASET_PATH, "annotation")
+    
+    test_tracks = load_tracks(test_annotations_path, test_audios_path, max_elements=max_elements, n_workers=n_workers)
 
-    if max_elements is not None:
-        annotation_files = annotation_files[:max_elements]
+    print(f"Done. Loaded {len(train_tracks) + len(validation_tracks) + len(test_tracks)} tracks successfully.")
+    save_tracks(train_tracks, TRAIN_FEATURES)
+    save_tracks(validation_tracks, VALIDATION_FEATURES)
+    save_tracks(test_tracks, TEST_FEATURES)
 
-    # build args list for each worker
-    args_list = [
-        (file, audio_files_path, annotation_files_path)
-        for file in annotation_files
-    ]
-
-    tracks = []
-    completed = 0
-
-    with ProcessPoolExecutor(max_workers=n_workers) as executor:
-        futures = {executor.submit(load_single_track, args): args[0] 
-                   for args in args_list}
-        
-        for future in as_completed(futures):
-            result = future.result()
-            completed += 1
-            if result is not None:
-                tracks.append(result)
-            if completed % 100 == 0:
-                print(f"Loaded {completed}/{len(annotation_files)} tracks")
-
-    print(f"Done. Loaded {len(tracks)} tracks successfully.")
-    save_tracks(tracks, CACHE_PATH)
-
-    return tracks
+    return train_tracks, validation_tracks, test_tracks
 
 
 def prepare_for_cnn(tracks, context=7):
@@ -253,7 +275,7 @@ def prepare_for_rnn(tracks, chunk_size=256):
 
 #region LOAD FROM FILE
 
-def save_tracks(tracks, cache_path=CACHE_PATH):
+def save_tracks(tracks, cache_path=TRAIN_FEATURES):
     """Save tracks to disk as numpy arrays."""
     os.makedirs(cache_path, exist_ok=True)
     for i, (features, labels) in enumerate(tracks):
@@ -262,7 +284,7 @@ def save_tracks(tracks, cache_path=CACHE_PATH):
     print(f"Saved {len(tracks)} tracks to {cache_path}")
 
 
-def load_tracks_from_cache(cache_path=CACHE_PATH):
+def load_tracks_from_cache(cache_path=TRAIN_FEATURES):
     """Load tracks from disk."""
     feature_files = sorted([f for f in os.listdir(cache_path) if f.endswith("_features.npy")])
     tracks = []

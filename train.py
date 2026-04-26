@@ -4,9 +4,9 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import f1_score
 import numpy as np
 from utils.model import DrumCNN
-from utils.dataset_preparation import prepare_for_cnn, load_training_data, SR, N_FFT, HOP_LENGTH, CACHE_PATH
+from utils.dataset_preparation import prepare_for_cnn, load_training_data, SR, N_FFT, HOP_LENGTH, N_MELS, TARGET_CLASSES
 import os
-from utils.dataloader import DrumDataset
+from utils.DrumsDataset import DrumsDataset
 
 CHECKPOINTS_FOLDER = 'checkpoints'
 
@@ -89,27 +89,6 @@ def train(model, train_loader: DataLoader, val_loader: DataLoader, pos_weight,
     return model
 
 
-# def main():
-#     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-#     print(f"Using device: {device}")
-
-#     # --- sanity check: overfit on 3 tracks ---
-#     print("=== Sanity check: overfitting on 3 tracks ===")
-#     tracks = get_train_data(max_elements=3)
-#     X, y = prepare_for_cnn(tracks, context=3)
-#     print(f"X: {X.shape}, y: {y.shape}")
-#     print(f"Class balance — kick: {y[:,0].mean():.3f}, "
-#           f"snare: {y[:,1].mean():.3f}, hihat: {y[:,2].mean():.3f}")
-
-#     # use same data for train and val — we just want to see if it can overfit
-#     model = DrumCNN(n_mels=80, context=3, n_classes=3).to(device)
-#     model = train(model, X, y, X, y,
-#                   n_epochs=30, batch_size=512, lr=1e-3, 
-#                   device=device, patience=30)  # high patience to not stop early
-
-#     # if F1 scores reach >0.9 on train==val, pipeline is correct
-#     # then move to full training with proper train/val split
-
 def main():
     # params
     window_context = 3
@@ -122,30 +101,31 @@ def main():
     # --- full training ---
     print("1) extracting features and labels from training data")
 
-    tracks = load_training_data(max_elements=500, n_workers=n_workers, load_if_available=True)
+    train_tracks, val_tracks, test_tracks = load_training_data(max_elements=None, n_workers=n_workers, load_if_available=True)
     
     print("2)  performing train test split")
-    np.random.seed(42)
-    # split at track level, so I have no leakage
-    indices = np.random.permutation(len(tracks))
-    # 80/10/10 train val test ratio
-    n_train = int(0.8 * len(tracks))
-    n_val   = int(0.1 * len(tracks))
+    # no more needed, now using STAR dataset  train/validation/test split
+    # np.random.seed(42)
+    # # split at track level, so I have no leakage
+    # indices = np.random.permutation(len(tracks))
+    # # 80/10/10 train val test ratio
+    # n_train = int(0.8 * len(tracks))
+    # n_val   = int(0.1 * len(tracks))
 
-    train_tracks = [tracks[i] for i in indices[:n_train]]
-    val_tracks   = [tracks[i] for i in indices[n_train:n_train + n_val]]
-    test_tracks  = [tracks[i] for i in indices[n_train + n_val:]]
+    # train_tracks = [tracks[i] for i in indices[:n_train]]
+    # val_tracks   = [tracks[i] for i in indices[n_train:n_train + n_val]]
+    # test_tracks  = [tracks[i] for i in indices[n_train + n_val:]]
 
 
     print("3) building datasets and dataloaders")
     n_dataloader_workers = 0 if os.name == 'nt' else n_workers
-    train_dataset = DrumDataset(train_tracks, context=window_context)
-    val_dataset   = DrumDataset(val_tracks,   context=window_context)
-    test_dataset  = DrumDataset(test_tracks,  context=window_context)
+    train_dataset = DrumsDataset(train_tracks, context=window_context)
+    val_dataset   = DrumsDataset(val_tracks,   context=window_context)
+    test_dataset  = DrumsDataset(test_tracks,  context=window_context)
 
-    train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True,  num_workers=n_dataloader_workers)
-    val_loader   = DataLoader(val_dataset,   batch_size=1024, shuffle=False, num_workers=n_dataloader_workers)
-    test_loader  = DataLoader(test_dataset,  batch_size=1024, shuffle=False, num_workers=n_dataloader_workers)
+    train_loader = DataLoader(train_dataset, batch_size=4096 * 2, shuffle=True,  num_workers=n_dataloader_workers)
+    val_loader   = DataLoader(val_dataset,   batch_size=4096 * 2, shuffle=False, num_workers=n_dataloader_workers)
+    test_loader  = DataLoader(test_dataset,  batch_size=4096 * 2, shuffle=False, num_workers=n_dataloader_workers)
 
     # compute pos weights from train labels only
     print("4) computing class weights")
@@ -157,7 +137,7 @@ def main():
     print("5) training")
     model = DrumCNN(n_mels=80, context=window_context, n_classes=3).to(device)
     model = train(model, train_loader, val_loader, pos_weight,
-                  n_epochs=100, lr=1e-4, device=device, patience=10)
+                  n_epochs=100, lr=2e-3, device=device, patience=5) # was 10, just for quick testing
 
     print("\n=== Test set evaluation ===")
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
@@ -168,12 +148,12 @@ def main():
     torch.save({
         'model_state_dict': model.state_dict(),
         'context': window_context,
-        'n_mels': 80,
-        'n_classes': 3,
+        'n_mels': N_MELS,
+        'n_classes': len(TARGET_CLASSES),
         'sr': SR,
         'hop_length': HOP_LENGTH,
         'n_fft': N_FFT,
-    }, os.path.join(CHECKPOINTS_FOLDER, 'drum_cnn_{}.pth'.format(test_loss)))
+    }, os.path.join(CHECKPOINTS_FOLDER, 'drum_cnn_{}.pth'.format(round(test_loss, 4))))
     print("Model saved to drum_cnn.pth")
 
 if __name__ == "__main__":

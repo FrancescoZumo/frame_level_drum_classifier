@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Drum Detector</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/7.7.3/wavesurfer.min.js"></script>
+  <style>
+    body { background: #111; color: #eee; font-family: monospace; 
+           max-width: 900px; margin: 40px auto; padding: 20px; }
+    h1   { color: #f90; letter-spacing: 2px; }
+    #drop-zone { border: 2px dashed #444; border-radius: 8px; padding: 40px;
+                 text-align: center; cursor: pointer; margin: 20px 0; }
+    #drop-zone.drag-over { border-color: #f90; background: #1a1a1a; }
+    #waveform { margin: 20px 0; position: relative; }
+    #markers  { position: relative; height: 60px; }
+    .legend   { display: flex; gap: 20px; margin: 10px 0; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    #status { color: #f90; margin: 10px 0; min-height: 20px; }
+    button  { background: #f90; border: none; color: #111; padding: 10px 24px;
+              font-family: monospace; font-size: 14px; cursor: pointer; 
+              border-radius: 4px; margin-top: 10px; }
+    button:disabled { background: #444; color: #888; }
+    @keyframes sweep-left {
+      0%   { opacity: 0; transform: scaleX(0.3); transform-origin: left; }
+      30%  { opacity: 1; transform: scaleX(1);   transform-origin: left; }
+      100% { opacity: 0; transform: scaleX(1);   transform-origin: left; }
+    } 
+    @keyframes sweep-right {
+      0%   { opacity: 0; transform: scaleX(0.3); transform-origin: right; }
+      30%  { opacity: 1; transform: scaleX(1);   transform-origin: right; }
+      100% { opacity: 0; transform: scaleX(1);   transform-origin: right; }
+    }
+  </style>
+</head>
+<body>
+
+<h1> DRUM DETECTOR</h1>
+
+<div id="drop-zone">
+  Drop an audio file here<br>
+  <small style="color:#888">or click to browse</small>
+  <input type="file" id="file-input" accept="audio/*" style="display:none">
+</div>
+
+<div id="status"></div>
+
+<div class="legend">
+  <div class="legend-item"><div class="dot" style="background:#ff4444"></div> Kick</div>
+  <div class="legend-item"><div class="dot" style="background:#44aaff"></div> Snare</div>
+  <div class="legend-item"><div class="dot" style="background:#44ff88"></div> Hi-hat</div>
+</div>
+
+<div id="waveform"></div>
+<div id="markers"></div>
+
+<button id="play-btn" disabled>Play</button>
+
+<script>
+
+  
+const COLORS = { kick: '#ff4444', snare: '#44aaff', hihat: '#44ff88' }
+let wavesurfer, onsetData, audioFile
+
+
+// init wavesurfer
+wavesurfer = WaveSurfer.create({
+  container: '#waveform',
+  waveColor: '#444',
+  progressColor: '#f90',
+  height: 80,
+  normalize: true,
+})
+
+wavesurfer.on('ready', () => {
+  document.getElementById('play-btn').disabled = false
+  drawMarkers()
+})
+
+// file drop
+const dropZone = document.getElementById('drop-zone')
+dropZone.addEventListener('click', () => document.getElementById('file-input').click())
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over') })
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'))
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]) })
+document.getElementById('file-input').addEventListener('change', e => handleFile(e.target.files[0]))
+
+
+let waveformReady = false
+
+wavesurfer = WaveSurfer.create({
+  container: '#waveform',
+  waveColor: '#444',
+  progressColor: '#f90',
+  height: 80,
+  normalize: true,
+})
+
+wavesurfer.on('ready', () => {
+  document.getElementById('play-btn').disabled = false
+  waveformReady = true
+  tryDrawMarkers()  // draw only if transcription also done
+})
+
+async function handleFile(file) {
+  if (!file) return
+  audioFile   = file
+  onsetData   = null
+  waveformReady = false
+  document.getElementById('markers').innerHTML = ''
+  document.getElementById('play-btn').disabled = true
+
+  // load waveform and transcribe in parallel
+  wavesurfer.loadBlob(file)
+
+  setStatus('Running drum detection...')
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const res = await fetch('/transcribe', { method: 'POST', body: formData })
+    onsetData = await res.json()
+    setStatus(`Done — kick: ${onsetData.onsets.kick.length}, `
+            + `snare: ${onsetData.onsets.snare.length}, `
+            + `hihat: ${onsetData.onsets.hihat.length} onsets`)
+    tryDrawMarkers()  // draw only if waveform also ready
+  } catch(e) {
+    setStatus('Error: ' + e.message)
+    console.error(e)
+  }
+}
+
+function tryDrawMarkers() {
+  // only draw when both are ready
+  if (!onsetData || !waveformReady) return
+
+  const container = document.getElementById('markers')
+  container.innerHTML = ''
+  const waveformWidth = document.getElementById('waveform').offsetWidth
+  const duration = onsetData.duration
+
+  for (const [cls, times] of Object.entries(onsetData.onsets)) {
+    for (const t of times) {
+      const x = (t / duration) * waveformWidth  // use pixels not percent
+      const marker = document.createElement('div')
+      marker.style.cssText = `
+        position: absolute;
+        left: ${x}px;
+        width: 2px;
+        height: 16px;
+        top: ${cls === 'kick' ? 0 : cls === 'snare' ? 20 : 40}px;
+        background: ${COLORS[cls]};
+        opacity: 0.85;
+      `
+      container.appendChild(marker)
+    }
+  }
+}
+
+document.getElementById('play-btn').addEventListener('click', () => {
+  wavesurfer.playPause()
+})
+
+wavesurfer.on('play', () => {
+  document.getElementById('play-btn').textContent = '⏸ Pause'
+  if (onsetData) {
+    scheduleKickFlashes(onsetData.onsets)
+    scheduleSnareFlashes(onsetData.onsets)
+    scheduleHihatFlashes(onsetData.onsets)
+  }
+})
+
+wavesurfer.on('pause', () => {
+  document.getElementById('play-btn').textContent = '▶ Play'
+  kickTimeouts.forEach(t => clearTimeout(t))
+  snareTimeouts.forEach(t => clearTimeout(t))
+  hihatTimeouts.forEach(t => clearTimeout(t))
+  kickTimeouts = []
+  snareTimeouts = []
+  hihatTimeouts = []
+})
+
+wavesurfer.on('seeking', () => {
+  if (wavesurfer.isPlaying() && onsetData) {
+    scheduleKickFlashes(onsetData.onsets)
+    scheduleSnareFlashes(onsetData.onsets)
+    scheduleHihatFlashes(onsetData.onsets)
+  }
+})
+
+let kickTimeouts = []
+let snareTimeouts = []
+let hihatTimeouts = []
+
+function scheduleKickFlashes(onsets, audioStartTime) {
+  // clear any previous scheduled flashes
+  kickTimeouts.forEach(t => clearTimeout(t))
+  kickTimeouts = []
+
+  const currentTime = wavesurfer.getCurrentTime()
+
+  onsets.kick.forEach(t => {
+    const delay = (t - currentTime) * 1000  // ms from now
+    if (delay < 0) return  // already passed
+
+    const timeout = setTimeout(() => {
+      flashBackground()
+    }, delay)
+
+    kickTimeouts.push(timeout)
+  })
+}
+
+function flashBackground() {
+  document.body.style.transition = 'background-color 0ms'
+  document.body.style.backgroundColor = '#ff4400'  // orange flash
+
+  setTimeout(() => {
+    document.body.style.transition = 'background-color 300ms ease-out'
+    document.body.style.backgroundColor = '#111'   // fade back to dark
+  }, 50)
+}
+
+function scheduleSnareFlashes(onsets) {
+  // clear any previous scheduled flashes
+  snareTimeouts.forEach(t => clearTimeout(t))
+  snareTimeouts = []
+
+  const currentTime = wavesurfer.getCurrentTime()
+
+  onsets.snare.forEach(t => {
+    const delay = (t - currentTime) * 1000  // ms from now
+    if (delay < 0) return  // already passed
+
+    const timeout = setTimeout(() => {
+      flashLeftSide()
+    }, delay)
+
+    snareTimeouts.push(timeout)
+  })
+}
+
+function flashLeftSide() {
+  const flash = document.createElement('div')
+  flash.style.cssText = `
+    position: fixed;
+    left: 0; top: 0;
+    width: 35%; height: 100%;
+    background: linear-gradient(to right, rgba(68, 170, 255, 0.35), transparent);
+    pointer-events: none;
+    animation: sweep-left 400ms cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+    z-index: 999;
+  `
+  document.body.appendChild(flash)
+  setTimeout(() => flash.remove(), 400)
+}
+
+
+
+function scheduleHihatFlashes(onsets) {
+  hihatTimeouts.forEach(t => clearTimeout(t))
+  hihatTimeouts = []
+  const currentTime = wavesurfer.getCurrentTime()
+  onsets.hihat.forEach(t => {
+    const delay = (t - currentTime) * 1000
+    if (delay < 0) return
+    const timeout = setTimeout(() => {
+      flashRightSide()
+    }, delay)
+    hihatTimeouts.push(timeout)
+  })
+}
+
+function flashRightSide() {
+  const flash = document.createElement('div')
+  flash.style.cssText = `
+    position: fixed;
+    right: 0; top: 0;
+    width: 35%; height: 100%;
+    background: linear-gradient(to left, rgba(68, 255, 136, 0.35), transparent);
+    pointer-events: none;
+    animation: sweep-right 400ms cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+    z-index: 999;
+  `
+  document.body.appendChild(flash)
+  setTimeout(() => flash.remove(), 400)
+}
+
+// trigger scheduling when play starts
+wavesurfer.on('play', () => {
+  if (onsetData) scheduleKickFlashes(onsetData.onsets)
+})
+
+// cancel flashes when paused or stopped
+wavesurfer.on('pause', () => {
+  kickTimeouts.forEach(t => clearTimeout(t))
+  kickTimeouts = []
+})
+
+// reschedule if user seeks to a different position
+wavesurfer.on('seeking', () => {
+  if (wavesurfer.isPlaying() && onsetData) {
+    scheduleKickFlashes(onsetData.onsets)
+  }
+})
+
+function setStatus(msg) { document.getElementById('status').textContent = msg }
+</script>
+</body>
+</html>

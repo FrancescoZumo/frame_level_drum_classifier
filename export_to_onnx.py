@@ -87,7 +87,8 @@ def export_to_onnx(checkpoint_path: str, output_path: str = 'drum_cnn.onnx'):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("checkpoint", type=str, nargs='?', help="Path to .pth checkpoint", default=os.path.join(CHECKPOINTS_FOLDER, "drum_cnn_1228_first_attempt.pth"))
+    parser.add_argument("checkpoint", type=str, nargs='?', help="Path to .pth checkpoint", \
+                        default=os.path.join(CHECKPOINTS_FOLDER, "drum_cnn_1024_fft.pth"))
     parser.add_argument("--output", type=str, default=os.path.join("webUI", "drum_cnn.onnx"))
     args = parser.parse_args()
 

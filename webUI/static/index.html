@@ -31,6 +31,11 @@
       30%  { opacity: 1; transform: scaleX(1);   transform-origin: right; }
       100% { opacity: 0; transform: scaleX(1);   transform-origin: right; }
     }
+    @keyframes sweep-bottom {
+      0%   { opacity: 0; transform: scaleY(0.3); transform-origin: bottom; }
+      30%  { opacity: 1; transform: scaleY(1);   transform-origin: bottom; }
+      100% { opacity: 0; transform: scaleY(1);   transform-origin: bottom; }
+    }
   </style>
 </head>
 <body>
@@ -88,13 +93,6 @@ document.getElementById('file-input').addEventListener('change', e => handleFile
 
 let waveformReady = false
 
-wavesurfer = WaveSurfer.create({
-  container: '#waveform',
-  waveColor: '#444',
-  progressColor: '#f90',
-  height: 80,
-  normalize: true,
-})
 
 wavesurfer.on('ready', () => {
   document.getElementById('play-btn').disabled = false
@@ -212,13 +210,18 @@ function scheduleKickFlashes(onsets, audioStartTime) {
 }
 
 function flashBackground() {
-  document.body.style.transition = 'background-color 0ms'
-  document.body.style.backgroundColor = '#ff4400'  // orange flash
-
-  setTimeout(() => {
-    document.body.style.transition = 'background-color 300ms ease-out'
-    document.body.style.backgroundColor = '#111'   // fade back to dark
-  }, 50)
+  const flash = document.createElement('div')
+  flash.style.cssText = `
+    position: fixed;
+    left: 0; bottom: 0;
+    width: 100%; height: 35%;
+    background: linear-gradient(to top, rgba(255, 100, 0, 0.35), transparent);
+    pointer-events: none;
+    animation: sweep-bottom 400ms cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+    z-index: 999;
+  `
+  document.body.appendChild(flash)
+  setTimeout(() => flash.remove(), 400)
 }
 
 function scheduleSnareFlashes(onsets) {
@@ -285,24 +288,6 @@ function flashRightSide() {
   document.body.appendChild(flash)
   setTimeout(() => flash.remove(), 400)
 }
-
-// trigger scheduling when play starts
-wavesurfer.on('play', () => {
-  if (onsetData) scheduleKickFlashes(onsetData.onsets)
-})
-
-// cancel flashes when paused or stopped
-wavesurfer.on('pause', () => {
-  kickTimeouts.forEach(t => clearTimeout(t))
-  kickTimeouts = []
-})
-
-// reschedule if user seeks to a different position
-wavesurfer.on('seeking', () => {
-  if (wavesurfer.isPlaying() && onsetData) {
-    scheduleKickFlashes(onsetData.onsets)
-  }
-})
 
 function setStatus(msg) { document.getElementById('status').textContent = msg }
 </script>

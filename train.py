@@ -101,20 +101,19 @@ def main():
     # --- full training ---
     print("1) extracting features and labels from training data")
 
-    train_tracks, val_tracks, test_tracks = load_training_data(max_elements=None, n_workers=n_workers, load_if_available=True)
+    tracks = load_training_data(max_elements=None, n_workers=n_workers, load_if_available=True)
     
     print("2)  performing train test split")
-    # no more needed, now using STAR dataset  train/validation/test split
-    # np.random.seed(42)
-    # # split at track level, so I have no leakage
-    # indices = np.random.permutation(len(tracks))
-    # # 80/10/10 train val test ratio
-    # n_train = int(0.8 * len(tracks))
-    # n_val   = int(0.1 * len(tracks))
+    np.random.seed(42)
+    # split at track level, so I have no leakage
+    indices = np.random.permutation(len(tracks))
+    # 80/10/10 train val test ratio
+    n_train = int(0.8 * len(tracks))
+    n_val   = int(0.1 * len(tracks))
 
-    # train_tracks = [tracks[i] for i in indices[:n_train]]
-    # val_tracks   = [tracks[i] for i in indices[n_train:n_train + n_val]]
-    # test_tracks  = [tracks[i] for i in indices[n_train + n_val:]]
+    train_tracks = [tracks[i] for i in indices[:n_train]]
+    val_tracks   = [tracks[i] for i in indices[n_train:n_train + n_val]]
+    test_tracks  = [tracks[i] for i in indices[n_train + n_val:]]
 
 
     print("3) building datasets and dataloaders")
@@ -123,21 +122,22 @@ def main():
     val_dataset   = DrumsDataset(val_tracks,   context=window_context)
     test_dataset  = DrumsDataset(test_tracks,  context=window_context)
 
-    train_loader = DataLoader(train_dataset, batch_size=4096 * 2, shuffle=True,  num_workers=n_dataloader_workers)
-    val_loader   = DataLoader(val_dataset,   batch_size=4096 * 2, shuffle=False, num_workers=n_dataloader_workers)
-    test_loader  = DataLoader(test_dataset,  batch_size=4096 * 2, shuffle=False, num_workers=n_dataloader_workers)
+    train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True,  num_workers=n_dataloader_workers)
+    val_loader   = DataLoader(val_dataset,   batch_size=1024, shuffle=False, num_workers=n_dataloader_workers)
+    test_loader  = DataLoader(test_dataset,  batch_size=1024, shuffle=False, num_workers=n_dataloader_workers)
 
     # compute pos weights from train labels only
     print("4) computing class weights")
     y_train_all = np.concatenate([labels for _, labels in train_tracks], axis=0)
     pos_weight = compute_pos_weights(y_train_all).to(device)
+
     print(f"Class balance — kick: {y_train_all[:,0].mean():.3f}, "
           f"snare: {y_train_all[:,1].mean():.3f}, hihat: {y_train_all[:,2].mean():.3f}")
 
     print("5) training")
     model = DrumCNN(n_mels=80, context=window_context, n_classes=3).to(device)
     model = train(model, train_loader, val_loader, pos_weight,
-                  n_epochs=100, lr=2e-3, device=device, patience=5) # was 10, just for quick testing
+                  n_epochs=100, lr=1e-4, device=device, patience=10) # was 10, just for quick testing
 
     print("\n=== Test set evaluation ===")
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)

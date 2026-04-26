@@ -4,6 +4,9 @@ import torch.nn as nn
 class DrumCNN(nn.Module):
     def __init__(self, n_mels=80, context=3, n_classes=3):
         super().__init__()
+
+        #TODO for now n_mels not used, but expected to be 80
+        assert n_mels == 80, "TODO"
         
         self.cnn = nn.Sequential(
             # Block 1

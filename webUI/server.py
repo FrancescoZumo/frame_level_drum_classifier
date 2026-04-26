@@ -65,3 +65,5 @@ async def transcribe(file: UploadFile):
 
 # mount static files LAST — after all routes are defined
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+# uvicorn server:app --reload

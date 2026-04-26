@@ -23,7 +23,7 @@ N_FFT = 2048        # ~46 ms time resolution, 21Hz freq resolution, TODO if too 
 
 
 PRECOMPUTED_FEATURES_FOLDER = "precomputed_features"
-TRAIN_FEATURES = os.path.join(PRECOMPUTED_FEATURES_FOLDER, f"sr{SR}_hop{HOP_LENGTH}_nfft{N_FFT}_mels{N_MELS}", "train")
+TRAIN_FEATURES = os.path.join(PRECOMPUTED_FEATURES_FOLDER, f"sr{SR}_hop{HOP_LENGTH}_nfft{N_FFT}_mels{N_MELS}")
 VALIDATION_FEATURES = os.path.join(PRECOMPUTED_FEATURES_FOLDER, f"sr{SR}_hop{HOP_LENGTH}_nfft{N_FFT}_mels{N_MELS}", "validation")
 TEST_FEATURES = os.path.join(PRECOMPUTED_FEATURES_FOLDER, f"sr{SR}_hop{HOP_LENGTH}_nfft{N_FFT}_mels{N_MELS}", "test")
 
@@ -208,6 +208,7 @@ def load_training_data(max_elements: int = None, n_workers: int = 4, load_if_ava
         print("Cache found, loading from disk...")
         tracks = load_tracks_from_cache(TRAIN_FEATURES)
         if max_elements is not None:
+            print(f"Limiting to first {max_elements} tracks from cache")
             tracks = tracks[:max_elements]
         return tracks
 
@@ -218,23 +219,23 @@ def load_training_data(max_elements: int = None, n_workers: int = 4, load_if_ava
     train_tracks = load_tracks(train_annotations_path, train_audios_path, max_elements=max_elements, n_workers=n_workers)
 
     # extract validation features
-    validation_audios_path = os.path.join(VALIDATION_DATASET_PATH, "audio\\mix")
-    validation_annotations_path = os.path.join(VALIDATION_DATASET_PATH, "annotation")
+    # validation_audios_path = os.path.join(VALIDATION_DATASET_PATH, "audio\\mix")
+    # validation_annotations_path = os.path.join(VALIDATION_DATASET_PATH, "annotation")
     
-    validation_tracks = load_tracks(validation_annotations_path, validation_audios_path, max_elements=max_elements, n_workers=n_workers)
+    # validation_tracks = load_tracks(validation_annotations_path, validation_audios_path, max_elements=max_elements, n_workers=n_workers)
 
-    #extract test features
-    test_audios_path = os.path.join(TEST_DATASET_PATH, "audio\\mix")
-    test_annotations_path = os.path.join(TEST_DATASET_PATH, "annotation")
+    # #extract test features
+    # test_audios_path = os.path.join(TEST_DATASET_PATH, "audio\\mix")
+    # test_annotations_path = os.path.join(TEST_DATASET_PATH, "annotation")
     
-    test_tracks = load_tracks(test_annotations_path, test_audios_path, max_elements=max_elements, n_workers=n_workers)
+    # test_tracks = load_tracks(test_annotations_path, test_audios_path, max_elements=max_elements, n_workers=n_workers)
 
-    print(f"Done. Loaded {len(train_tracks) + len(validation_tracks) + len(test_tracks)} tracks successfully.")
+    print(f"Done. Loaded {len(train_tracks)} tracks successfully.")
     save_tracks(train_tracks, TRAIN_FEATURES)
-    save_tracks(validation_tracks, VALIDATION_FEATURES)
-    save_tracks(test_tracks, TEST_FEATURES)
+    # save_tracks(validation_tracks, VALIDATION_FEATURES)
+    # save_tracks(test_tracks, TEST_FEATURES)
 
-    return train_tracks, validation_tracks, test_tracks
+    return train_tracks
 
 
 def prepare_for_cnn(tracks, context=7):

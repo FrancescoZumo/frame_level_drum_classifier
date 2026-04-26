@@ -219,3 +219,8 @@ __marimo__/
 
 # numpy files
 *.npy
+
+#
+*.wav
+*.mp3
+*.reapeaks

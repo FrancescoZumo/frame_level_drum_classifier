@@ -3,10 +3,12 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import f1_score
 import numpy as np
-from model import DrumCNN
-from dataset_preparation import prepare_for_cnn, load_training_data, SR, N_FFT, HOP_LENGTH, CACHE_PATH
+from utils.model import DrumCNN
+from utils.dataset_preparation import prepare_for_cnn, load_training_data, SR, N_FFT, HOP_LENGTH, CACHE_PATH
 import os
-from dataloader import DrumDataset
+from utils.dataloader import DrumDataset
+
+CHECKPOINTS_FOLDER = 'checkpoints'
 
 def compute_pos_weights(y_train):
     """Compute positive weights for BCEWithLogitsLoss to handle class imbalance."""
@@ -171,7 +173,7 @@ def main():
         'sr': SR,
         'hop_length': HOP_LENGTH,
         'n_fft': N_FFT,
-    }, 'drum_cnn.pth')
+    }, os.path.join(CHECKPOINTS_FOLDER, 'drum_cnn_{}.pth'.format(test_loss)))
     print("Model saved to drum_cnn.pth")
 
 if __name__ == "__main__":

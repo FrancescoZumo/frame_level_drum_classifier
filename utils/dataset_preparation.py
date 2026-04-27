@@ -19,7 +19,7 @@ AUDIO_FILE_DURATION = 60 #seconds
 SR = 22050
 HOP_LENGTH = 256   # hop_length is ~10 ms time resolution
 N_MELS = 80        # standard, captures enough spectral detail
-N_FFT = 2048        # ~46 ms time resolution, 21Hz freq resolution, TODO if too low increase to 2048 
+N_FFT = 1024        # ~46 ms time resolution, 21Hz freq resolution, TODO if too low increase to 2048 
 
 
 PRECOMPUTED_FEATURES_FOLDER = "precomputed_features"
@@ -136,12 +136,28 @@ def extract_features_and_labels(args):
 
     file, audio_files_path, annotation_files_path = args
 
+    file_id = file.split("_")[1]
+
+
     audio_path = os.path.join(audio_files_path, file.replace(".txt", ".flac"))
     annot_path = os.path.join(annotation_files_path, file)
 
     if not os.path.exists(audio_path):
-        print(f"Missing audio for {file}, skipping")
-        return None
+        # names could not be the same btw annotation and audio files, I can look for ID for match
+        available_audios = os.listdir(audio_files_path)
+        files_with_same_id = [f for f in available_audios if file_id in f]
+        if len(files_with_same_id) > 1:
+            print("more than one files (or none) with same Id: {}, skipping".format(files_with_same_id))
+            return None
+        elif len(files_with_same_id) == 0:
+            print(f"Missing audio for {file}, skipping")
+            return None
+        # Found exactly one match --> this is the correct audio file
+        audio_path = os.path.join(audio_files_path, files_with_same_id[0])
+        # check if file exists
+        if not os.path.exists(audio_path):
+            print(f"Missing audio for {file}, skipping")
+            return None
 
     try:
         features, duration = extract_audio_features(audio_path)
@@ -206,36 +222,34 @@ def load_training_data(max_elements: int = None, n_workers: int = 4, load_if_ava
 
     if load_if_available and os.path.exists(TRAIN_FEATURES) and len(os.listdir(TRAIN_FEATURES)) > 0:
         print("Cache found, loading from disk...")
-        tracks = load_tracks_from_cache(TRAIN_FEATURES)
+        tracks = load_paired_tracks_from_cache(TRAIN_FEATURES)
         if max_elements is not None:
             print(f"Limiting to first {max_elements} tracks from cache")
             tracks = tracks[:max_elements]
         return tracks
 
-    # extract train features
+    # extract train features from mix folder
     train_audios_path = os.path.join(TRAIN_DATASET_PATH, "ismir04\\audio\\mix")
     train_annotations_path = os.path.join(TRAIN_DATASET_PATH, "ismir04\\annotation")
     
-    train_tracks = load_tracks(train_annotations_path, train_audios_path, max_elements=max_elements, n_workers=n_workers)
+    mix_tracks = load_tracks(train_annotations_path, train_audios_path, max_elements=max_elements, n_workers=n_workers)
 
-    # extract validation features
-    # validation_audios_path = os.path.join(VALIDATION_DATASET_PATH, "audio\\mix")
-    # validation_annotations_path = os.path.join(VALIDATION_DATASET_PATH, "annotation")
+    # extract train features from drums_resynthesized folder
+    train_audios_path_2 = os.path.join(TRAIN_DATASET_PATH, "ismir04\\audio\\re_synthesized_drum")
+    train_annotations_path_2 = os.path.join(TRAIN_DATASET_PATH, "ismir04\\annotation")
     
-    # validation_tracks = load_tracks(validation_annotations_path, validation_audios_path, max_elements=max_elements, n_workers=n_workers)
+    resyn_tracks = load_tracks(train_annotations_path_2, train_audios_path_2, max_elements=max_elements, n_workers=n_workers)
 
-    # #extract test features
-    # test_audios_path = os.path.join(TEST_DATASET_PATH, "audio\\mix")
-    # test_annotations_path = os.path.join(TEST_DATASET_PATH, "annotation")
-    
-    # test_tracks = load_tracks(test_annotations_path, test_audios_path, max_elements=max_elements, n_workers=n_workers)
+    # pair tracks by index to prevent leaage during split
+    paired_tracks = list(zip(mix_tracks, resyn_tracks))
 
-    print(f"Done. Loaded {len(train_tracks)} tracks successfully.")
-    save_tracks(train_tracks, TRAIN_FEATURES)
+    print(f"Loaded {len(paired_tracks)} track pairs")
+    save_paired_tracks(paired_tracks, TRAIN_FEATURES)
+    return paired_tracks
     # save_tracks(validation_tracks, VALIDATION_FEATURES)
     # save_tracks(test_tracks, TEST_FEATURES)
 
-    return train_tracks
+    return all_tracks
 
 
 def prepare_for_cnn(tracks, context=7):
@@ -295,5 +309,32 @@ def load_tracks_from_cache(cache_path=TRAIN_FEATURES):
         tracks.append((features, labels))
     print(f"Loaded {len(tracks)} tracks from cache.")
     return tracks
+
+
+
+def save_paired_tracks(paired_tracks, cache_path=TRAIN_FEATURES):
+    """Save paired (mix, resynthesized) tracks to disk."""
+    os.makedirs(cache_path, exist_ok=True)
+    for i, (mix, resyn) in enumerate(paired_tracks):
+        mix_features, mix_labels     = mix
+        resyn_features, resyn_labels = resyn
+        np.save(os.path.join(cache_path, f"track_{i:04d}_mix_features.npy"),   mix_features)
+        np.save(os.path.join(cache_path, f"track_{i:04d}_labels.npy"),     mix_labels)
+        np.save(os.path.join(cache_path, f"track_{i:04d}_resyn_features.npy"), resyn_features)
+    print(f"Saved {len(paired_tracks)} track pairs to {cache_path}")
+
+
+def load_paired_tracks_from_cache(cache_path=TRAIN_FEATURES):
+    """Load paired tracks from disk."""
+    n_tracks = len([f for f in os.listdir(cache_path) if f.endswith('_mix_features.npy')])
+    paired_tracks = []
+    for i in range(n_tracks):
+        mix_features   = np.load(os.path.join(cache_path, f"track_{i:04d}_mix_features.npy"))
+        labels: np.ndarray = np.load(os.path.join(cache_path, f"track_{i:04d}_labels.npy"))
+        resyn_features = np.load(os.path.join(cache_path, f"track_{i:04d}_resyn_features.npy"))
+        paired_tracks.append(((mix_features, labels), (resyn_features, labels.copy())))
+    print(f"Loaded {len(paired_tracks)} track pairs from cache.")
+    return paired_tracks
+
 
 #endregion

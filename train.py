@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import f1_score
 import numpy as np
 from utils.model import DrumCNN
-from utils.dataset_preparation import prepare_for_cnn, load_training_data, SR, N_FFT, HOP_LENGTH, N_MELS, TARGET_CLASSES
+from utils.dataset_preparation import load_training_data, SR, N_FFT, HOP_LENGTH, N_MELS, TARGET_CLASSES
 import os
 from utils.DrumsDataset import DrumsDataset
 
@@ -92,8 +92,9 @@ def train(model, train_loader: DataLoader, val_loader: DataLoader, pos_weight,
 def main():
     # params
     window_context = 3
-    n_workers = os.cpu_count() - 1  # leave one core free for the OS
+    n_workers = 1#os.cpu_count() - 1  # leave one core free for the OS
     
+    experiment_name = "plus_solo_drums"
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
@@ -101,24 +102,33 @@ def main():
     # --- full training ---
     print("1) extracting features and labels from training data")
 
-    tracks = load_training_data(max_elements=None, n_workers=n_workers, load_if_available=True)
+    paired_tracks = load_training_data(max_elements=614, n_workers=n_workers, load_if_available=False)
     
     print("2)  performing train test split")
+
     np.random.seed(42)
     # split at track level, so I have no leakage
-    indices = np.random.permutation(len(tracks))
+    indices = np.random.permutation(len(paired_tracks))
     # 80/10/10 train val test ratio
-    n_train = int(0.8 * len(tracks))
-    n_val   = int(0.1 * len(tracks))
+    n_train = int(0.8 * len(paired_tracks))
+    n_val   = int(0.1 * len(paired_tracks))
 
-    train_tracks = [tracks[i] for i in indices[:n_train]]
-    val_tracks   = [tracks[i] for i in indices[n_train:n_train + n_val]]
-    test_tracks  = [tracks[i] for i in indices[n_train + n_val:]]
+    train_pairs = [paired_tracks[i] for i in indices[:n_train]]
+    val_pairs   = [paired_tracks[i] for i in indices[n_train:n_train + n_val]]
+    test_pairs  = [paired_tracks[i] for i in indices[n_train + n_val:]]
+
+    # flatten pairs into track lists
+    # train gets both mix and re-synthesized
+    train_tracks = [track for pair in train_pairs for track in pair]
+
+    # val and test get only mix since evaluation must reflect real use case
+    val_tracks  = [pair[0] for pair in val_pairs]   # index 0 = mix
+    test_tracks = [pair[0] for pair in test_pairs]  # index 0 = mix
 
 
     print("3) building datasets and dataloaders")
     n_dataloader_workers = 0 if os.name == 'nt' else n_workers
-    train_dataset = DrumsDataset(train_tracks, context=window_context)
+    train_dataset = DrumsDataset(train_tracks, context=window_context, augment=True)
     val_dataset   = DrumsDataset(val_tracks,   context=window_context)
     test_dataset  = DrumsDataset(test_tracks,  context=window_context)
 
@@ -153,7 +163,7 @@ def main():
         'sr': SR,
         'hop_length': HOP_LENGTH,
         'n_fft': N_FFT,
-    }, os.path.join(CHECKPOINTS_FOLDER, 'drum_cnn_{}.pth'.format(round(test_loss, 4))))
+    }, os.path.join(CHECKPOINTS_FOLDER, 'drum_cnn_{}.pth'.format(round(experiment_name, 4))))
     print("Model saved to drum_cnn.pth")
 
 if __name__ == "__main__":

@@ -3,13 +3,13 @@ The goal of this project is to transcribe the kicks, snares and hihats from any 
 
 ## Method Overview
 
-I chose to stick to a simple architecture, a 4D CNN that receives mel spectrograms as input feature and outputs probabilities used to predict the presence or absence of each class at every frame.
+I trained a 4D CNN that receives mel spectrograms as input feature and outputs probabilities used to predict the presence or absence of each class at every frame.
 
-The temporal resolution of this approach was set to 11.6ms (i.e. STFT with 256 hop size on 22050HZ audio), to ensure precise onset times. 
+The temporal resolution of this approach was set to 10.7ms (i.e. STFT with 256 hop size on 22050Hz audio). 
 
 The training was performed on a dataset with the following specifications:
 - 614 full song mixes, coupled with ground truth, frame level annotations
-- 614 drum only songs, coupled with ground truth, frame level annotations
+- 614 drums only songs, coupled with ground truth, frame level annotations
 Each song in the first group has its correspondent in the second one.
 
 The combination of the two was used to train the CNN.
@@ -18,8 +18,30 @@ Class level F1 Score was the main evaluation metric on the test set.
 
 ## Training Dataset
  - STAR Dataset, https://zenodo.org/records/15690078.
-Among all analyzed options, this dataset provides drums annotations for both drums only recordings and complete song mix.
-Also, the annotation schema is relatively simple to parse, with respect to other datasets (e.g. IDMT-SMT-Drums https://www.idmt.fraunhofer.de/en/publications/datasets/drums.html)
+Among all analyzed options, this dataset provides drums annotations for both drums only recordings and complete song mix. It was interesting for making experiments with multiple approaches.
+Also, the annotation schema is relatively simple to parse, with respect to other datasets.
+
+For the model training, a subset of this datased was used and it's composed as follows:
+- 614 full song mixes, coupled with ground truth, frame level annotations
+- 614 drums only songs, coupled with ground truth, frame level annotations
+Each song in the first group has its correspondent in the second one.
+
+The combination of the two was used to train the CNN.
+
+### Dataset Annotations
+The dataset provides annotations for 18 classes. I foolowed the mapping proposed by the authors to convert them to 3.
+```
+# Map STAR classes to only Three classes: Kick, Snare, Hi-hat
+# see https://transactions.ismir.net/articles/244/files/6888ab991b2f2.pdf page 255 for reference to names mapping
+CLASS_MAP = {
+    'BD': 'kick',    # Bass Drum
+    'SD': 'snare',   # Snare Drum
+    'CHH': 'hihat',   # Closed Hi-Hat
+    'PHH': 'hihat',   # Pedal Hi-Hat
+    'OHH': 'hihat',   # Open Hi-Hat
+    # LT, MT, HT, CY etc. → ignored (toms, cymbals)
+}
+```
 
 ## Feature Extraction
 - I chose mel-spectrograms as main feature, as long as their 1st and 2nd derivative computed across time axis.
@@ -28,7 +50,7 @@ Together they are fed as a 3-channel feature to the CNN.
 - I used the following parameters for computing STFT and mel spectrograms:
 ```
 SR = 22050         # captures the necessary frequency range for drums, though certain papers even resample down to 16KHz
-HOP_LENGTH = 256   # determines ~11.6 ms time resolution
+HOP_LENGTH = 256   # determines ~10.7 ms time resolution
 N_MELS = 96        # usually 80 or 96 are standard choices
 N_FFT = 1024       # it determines ~46 ms time resolution and ~21Hz freq resolution
 ```
@@ -41,7 +63,7 @@ It receives 4D inputs with dimensions (BATCH, CHANNELS, CONTEXT_WINDOW, MELS)
 
 - with respect to reference paper, I reduced the the number of convolutional blocks from 5 to 3, and the context window from 25 to 11, to reduce model size.
 
-The model's number of params is 1,105,667.
+- The model's number of params is 1,105,667.
 
 ## Evaluation results
 TODO F1 Score on test set
@@ -61,6 +83,7 @@ uvicorn server:app --reload
 
 ### train the CNN locally
 - setup cuda for your device and adjust batch size to your VRAM (current setup works for 4GB)
+- setup dataset max size according to your RAM (current setup works for 16GB)
 
 - Download the STAR Dataset From zenodo: https://zenodo.org/records/15690078 and setup paths inside python scripts
 - Adjust Number of tracks to load from dataset

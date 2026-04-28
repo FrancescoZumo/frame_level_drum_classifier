@@ -13,11 +13,11 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"],
 
 # load model
 SESSION = ort.InferenceSession("drum_cnn.onnx", providers=["CPUExecutionProvider"])
-CONTEXT  = 3
+CONTEXT  = 5
 SR       = 22050
 HOP      = 256
 N_FFT    = 1024
-N_MELS   = 80
+N_MELS   = 96
 CLASSES  = ["kick", "snare", "hihat"]
 
 # define API routes FIRST

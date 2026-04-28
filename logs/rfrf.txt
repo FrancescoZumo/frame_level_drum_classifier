@@ -1,0 +1,35 @@
+5) training
+Epoch 001 | train_loss: 0.3203 | val_loss: 0.3304 | F1 kick: 0.793 snare: 0.569 hihat: 0.698
+Epoch 002 | train_loss: 0.2449 | val_loss: 0.3029 | F1 kick: 0.802 snare: 0.592 hihat: 0.689
+Epoch 003 | train_loss: 0.2242 | val_loss: 0.3008 | F1 kick: 0.817 snare: 0.658 hihat: 0.733
+Epoch 004 | train_loss: 0.2113 | val_loss: 0.2826 | F1 kick: 0.832 snare: 0.693 hihat: 0.746
+Epoch 005 | train_loss: 0.2026 | val_loss: 0.2807 | F1 kick: 0.795 snare: 0.700 hihat: 0.741
+Epoch 006 | train_loss: 0.1961 | val_loss: 0.2781 | F1 kick: 0.803 snare: 0.605 hihat: 0.730
+Epoch 007 | train_loss: 0.1902 | val_loss: 0.2762 | F1 kick: 0.816 snare: 0.731 hihat: 0.749
+Epoch 008 | train_loss: 0.1855 | val_loss: 0.2757 | F1 kick: 0.836 snare: 0.751 hihat: 0.735
+Epoch 009 | train_loss: 0.1813 | val_loss: 0.2659 | F1 kick: 0.808 snare: 0.666 hihat: 0.732
+Epoch 010 | train_loss: 0.1777 | val_loss: 0.2789 | F1 kick: 0.853 snare: 0.745 hihat: 0.736
+Epoch 011 | train_loss: 0.1747 | val_loss: 0.2655 | F1 kick: 0.836 snare: 0.669 hihat: 0.738
+Epoch 012 | train_loss: 0.1719 | val_loss: 0.2821 | F1 kick: 0.832 snare: 0.772 hihat: 0.754
+Epoch 013 | train_loss: 0.1690 | val_loss: 0.2683 | F1 kick: 0.818 snare: 0.715 hihat: 0.745
+Epoch 014 | train_loss: 0.1668 | val_loss: 0.2674 | F1 kick: 0.838 snare: 0.704 hihat: 0.746
+Epoch 015 | train_loss: 0.1646 | val_loss: 0.2807 | F1 kick: 0.834 snare: 0.761 hihat: 0.785
+Epoch 016 | train_loss: 0.1624 | val_loss: 0.2732 | F1 kick: 0.849 snare: 0.720 hihat: 0.759
+Epoch 017 | train_loss: 0.1603 | val_loss: 0.2921 | F1 kick: 0.862 snare: 0.720 hihat: 0.786
+Epoch 018 | train_loss: 0.1583 | val_loss: 0.2835 | F1 kick: 0.853 snare: 0.766 hihat: 0.769
+Epoch 019 | train_loss: 0.1567 | val_loss: 0.2619 | F1 kick: 0.822 snare: 0.699 hihat: 0.736
+Epoch 020 | train_loss: 0.1548 | val_loss: 0.2772 | F1 kick: 0.848 snare: 0.716 hihat: 0.762
+Epoch 021 | train_loss: 0.1533 | val_loss: 0.2670 | F1 kick: 0.812 snare: 0.700 hihat: 0.752
+Epoch 022 | train_loss: 0.1525 | val_loss: 0.2912 | F1 kick: 0.831 snare: 0.795 hihat: 0.757
+Epoch 023 | train_loss: 0.1511 | val_loss: 0.2771 | F1 kick: 0.850 snare: 0.740 hihat: 0.762
+Epoch 024 | train_loss: 0.1497 | val_loss: 0.2889 | F1 kick: 0.859 snare: 0.725 hihat: 0.763
+Epoch 025 | train_loss: 0.1485 | val_loss: 0.2934 | F1 kick: 0.838 snare: 0.784 hihat: 0.748
+Epoch 026 | train_loss: 0.1472 | val_loss: 0.2733 | F1 kick: 0.845 snare: 0.726 hihat: 0.754
+Epoch 027 | train_loss: 0.1463 | val_loss: 0.2784 | F1 kick: 0.845 snare: 0.669 hihat: 0.756
+Epoch 028 | train_loss: 0.1453 | val_loss: 0.2742 | F1 kick: 0.836 snare: 0.736 hihat: 0.760
+Epoch 029 | train_loss: 0.1446 | val_loss: 0.2782 | F1 kick: 0.846 snare: 0.745 hihat: 0.737
+Early stopping at epoch 29
+
+=== Test set evaluation ===
+Test loss: 0.2807 | F1 kick: 0.833 snare: 0.697 hihat: 0.650
+Model saved to drum_cnn.pth

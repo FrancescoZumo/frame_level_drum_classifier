@@ -1,7 +1,6 @@
 import torch
-import onnx
 import os
-from train import DrumCNN 
+from utils.model import DrumCNN 
 
 from train import CHECKPOINTS_FOLDER
 
@@ -88,7 +87,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("checkpoint", type=str, nargs='?', help="Path to .pth checkpoint", \
-                        default=os.path.join(CHECKPOINTS_FOLDER, "drum_cnn_1024_fft.pth"))
+                        default=os.path.join(CHECKPOINTS_FOLDER, "newCNN.pth"))
     parser.add_argument("--output", type=str, default=os.path.join("webUI", "drum_cnn.onnx"))
     args = parser.parse_args()
 

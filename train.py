@@ -45,7 +45,7 @@ def evaluate(model: nn.Module, loader, criterion, device, threshold=0.5):
 
 
 def train(model, train_loader: DataLoader, val_loader: DataLoader, pos_weight,
-          n_epochs=100, lr=1e-3, device='cpu', patience=10):
+          n_epochs=100, lr=1e-3, device='cuda', patience=10):
 
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -91,10 +91,10 @@ def train(model, train_loader: DataLoader, val_loader: DataLoader, pos_weight,
 
 def main():
     # params
-    window_context = 3
-    n_workers = 1#os.cpu_count() - 1  # leave one core free for the OS
+    window_context = 5
+    n_workers = os.cpu_count() - 1  # leave one core free for the OS
     
-    experiment_name = "plus_solo_drums"
+    experiment_name = "new2"
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
@@ -102,7 +102,7 @@ def main():
     # --- full training ---
     print("1) extracting features and labels from training data")
 
-    paired_tracks = load_training_data(max_elements=614, n_workers=n_workers, load_if_available=False)
+    paired_tracks = load_training_data(max_elements=614, n_workers=n_workers, load_if_available=True)
     
     print("2)  performing train test split")
 
@@ -128,13 +128,13 @@ def main():
 
     print("3) building datasets and dataloaders")
     n_dataloader_workers = 0 if os.name == 'nt' else n_workers
-    train_dataset = DrumsDataset(train_tracks, context=window_context, augment=True)
+    train_dataset = DrumsDataset(train_tracks, context=window_context, augment=False)
     val_dataset   = DrumsDataset(val_tracks,   context=window_context)
     test_dataset  = DrumsDataset(test_tracks,  context=window_context)
 
-    train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True,  num_workers=n_dataloader_workers)
-    val_loader   = DataLoader(val_dataset,   batch_size=1024, shuffle=False, num_workers=n_dataloader_workers)
-    test_loader  = DataLoader(test_dataset,  batch_size=1024, shuffle=False, num_workers=n_dataloader_workers)
+    train_loader = DataLoader(train_dataset, batch_size=1024 * 4, shuffle=True,  num_workers=n_dataloader_workers)
+    val_loader   = DataLoader(val_dataset,   batch_size=1024 * 4, shuffle=False, num_workers=n_dataloader_workers)
+    test_loader  = DataLoader(test_dataset,  batch_size=1024 * 4, shuffle=False, num_workers=n_dataloader_workers)
 
     # compute pos weights from train labels only
     print("4) computing class weights")
@@ -145,7 +145,7 @@ def main():
           f"snare: {y_train_all[:,1].mean():.3f}, hihat: {y_train_all[:,2].mean():.3f}")
 
     print("5) training")
-    model = DrumCNN(n_mels=80, context=window_context, n_classes=3).to(device)
+    model = DrumCNN(n_mels=N_MELS, context=window_context, n_classes=3).to(device)
     model = train(model, train_loader, val_loader, pos_weight,
                   n_epochs=100, lr=1e-4, device=device, patience=10) # was 10, just for quick testing
 
@@ -163,7 +163,7 @@ def main():
         'sr': SR,
         'hop_length': HOP_LENGTH,
         'n_fft': N_FFT,
-    }, os.path.join(CHECKPOINTS_FOLDER, 'drum_cnn_{}.pth'.format(round(experiment_name, 4))))
+    }, os.path.join(CHECKPOINTS_FOLDER, 'drum_cnn_{}.pth'.format(experiment_name)))
     print("Model saved to drum_cnn.pth")
 
 if __name__ == "__main__":

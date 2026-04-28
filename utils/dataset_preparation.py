@@ -18,7 +18,7 @@ TEST_DATASET_PATH = "D:\\Downloads\\STAR_Drums_full\\STAR_publication\\data\\tes
 AUDIO_FILE_DURATION = 60 #seconds
 SR = 22050
 HOP_LENGTH = 256   # hop_length is ~10 ms time resolution
-N_MELS = 80        # standard, captures enough spectral detail
+N_MELS = 96        # standard, captures enough spectral detail
 N_FFT = 1024        # ~46 ms time resolution, 21Hz freq resolution, TODO if too low increase to 2048 
 
 

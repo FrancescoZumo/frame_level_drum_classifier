@@ -105,3 +105,10 @@ python export_to_onnx.py [path_to_checkpoint_file.pth]
 - Instead of fixed 0.5 class prediction threshold, each class could have a custom threshold that maximizes F1 score on test set.
 - For evaluation, F1 score could be computed with a tolerance window across time (e.g. a kick predicted slightly earlier or later is still considered as True Positive)
 - Optimize model training to reduce RAM usage (right now all dataset constantly stays in RAM)
+
+## AI Usage
+- NotebookLM was used to retrieve and organize information from research papers to guide preliminary design choices
+- Claude (via Web) was used as a programming assistant for building the training pipeline and for reviewing design choices.
+- The webUI demo application has been mostly written by Claude. 
+
+*All AI-generated code and suggestions were reviewed and validated by the author.*

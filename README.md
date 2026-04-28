@@ -16,6 +16,8 @@ uvicorn server:app --reload
 ### train the CNN locally
 - setup cuda for your device and adjust batch size to your VRAM (current setup works for 4GB)
 
+- Download the STAR Dataset From zenodo: https://zenodo.org/records/15690078 and setup paths inside python scripts
+- Adjust Number of tracks to load from dataset
 - run train script
 ```
 python train.py
@@ -30,7 +32,11 @@ python export_to_onnx.py [path_to_checkpoint_file.pth]
 ```
 
 ## Method Overview
-TODO
+The Goal is to transcribe the kicks, snares, hihats from any input audio, with enough temporal precision and low computational cost.
+
+I chose to stick to the simplest architecture, a 4D CNN that receives 3-channel mel spectrograms as input feature (2nd and 3rd channels are respectively 1st and 2nd derivative of mel spectrogram) 
+
+The CNN outputs 3 logits, that are subsequently converted to probabilities with sigmoid function and used to predict the presence or absence of each class at every frame.
 
 ## Training Dataset
  - STAR Dataset, https://zenodo.org/records/15690078.
@@ -54,7 +60,11 @@ It receives 4D inputs with dimensions (BATCH, CHANNELS, CONTEXT_WINDOW, MELS)
 
 
 ## Evaluation results
-TODO F1 Score
+TODO F1 Score on test set
+TODO Per-class precision and recall on test set
 
 ## Possible Improvements
 - Dataset audio samples belong to multiple classes (Drum kit, playing style). I should balance their presence equally in train val and test sets.
+- Instead of fixed 0.5 class prediction threshold, each class could have a custom threshold that maximizes F1 score on test set.
+- For evaluation, F1 score could be computed with a tolerance window
+- Optimize model training to reduce RAM usage (right now all dataset constantly stays in RAM, I guess it's bottleneck for training speed)

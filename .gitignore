@@ -224,3 +224,4 @@ __marimo__/
 *.wav
 *.mp3
 *.reapeaks
+*.pth

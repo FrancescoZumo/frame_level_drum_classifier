@@ -87,7 +87,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("checkpoint", type=str, nargs='?', help="Path to .pth checkpoint", \
-                        default=os.path.join(CHECKPOINTS_FOLDER, "newCNN.pth"))
+                        default=os.path.join(CHECKPOINTS_FOLDER, "epoch_19_new2.pth"))
     parser.add_argument("--output", type=str, default=os.path.join("webUI", "drum_cnn.onnx"))
     args = parser.parse_args()
 

@@ -138,7 +138,6 @@ def extract_features_and_labels(args):
 
     file_id = file.split("_")[1]
 
-
     audio_path = os.path.join(audio_files_path, file.replace(".txt", ".flac"))
     annot_path = os.path.join(annotation_files_path, file)
 
@@ -171,13 +170,13 @@ def extract_features_and_labels(args):
         features = features[:, :, :T]
         labels = labels[:T]
 
-        return (features, labels)
+        return (file_id, features, labels)
 
     except Exception as e:
         print(f"Error processing {file}: {e}")
         return None
     
-def load_tracks(train_annotations_path, train_audios_path, max_elements=None, n_workers=4):
+def load_tracks(train_annotations_path, train_audios_path, max_elements=None, n_workers=4) -> dict:
     annotation_files = sorted(os.listdir(train_annotations_path))
 
     if max_elements is not None:
@@ -189,7 +188,7 @@ def load_tracks(train_annotations_path, train_audios_path, max_elements=None, n_
         for file in annotation_files
     ]
 
-    tracks = []
+    tracks = {}
     completed = 0
 
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
@@ -200,7 +199,7 @@ def load_tracks(train_annotations_path, train_audios_path, max_elements=None, n_
             result = future.result()
             completed += 1
             if result is not None:
-                tracks.append(result)
+                tracks[result[0]] = (result[1], result[2])
             if completed % 100 == 0:
                 print(f"Loaded {completed}/{len(annotation_files)} tracks")
 
@@ -241,7 +240,14 @@ def load_training_data(max_elements: int = None, n_workers: int = 4, load_if_ava
     resyn_tracks = load_tracks(train_annotations_path_2, train_audios_path_2, max_elements=max_elements, n_workers=n_workers)
 
     # pair tracks by index to prevent leaage during split
-    paired_tracks = list(zip(mix_tracks, resyn_tracks))
+    # assertion that verifies that the pairing is done correctly, i.e. each pair has same ID.
+    mix_tracks_list, resyn_tracks_list = [], []
+    for id in mix_tracks.keys():
+        mix_tracks_list.append(mix_tracks[id])
+        resyn_tracks_list.append(resyn_tracks[id])
+        min_duration = min(len(mix_tracks_list[-1][1]), len(resyn_tracks_list[-1][1]))
+        assert (mix_tracks_list[-1][1][:min_duration] == resyn_tracks_list[-1][1][:min_duration]).all(), "the two tracks at idx {} should have the same labels, WHY not?".format(id)
+    paired_tracks = list(zip(mix_tracks_list, resyn_tracks_list))
 
     print(f"Loaded {len(paired_tracks)} track pairs")
     save_paired_tracks(paired_tracks, TRAIN_FEATURES)
@@ -319,8 +325,9 @@ def save_paired_tracks(paired_tracks, cache_path=TRAIN_FEATURES):
         mix_features, mix_labels     = mix
         resyn_features, resyn_labels = resyn
         np.save(os.path.join(cache_path, f"track_{i:04d}_mix_features.npy"),   mix_features)
-        np.save(os.path.join(cache_path, f"track_{i:04d}_labels.npy"),     mix_labels)
+        np.save(os.path.join(cache_path, f"track_{i:04d}_mix_labels.npy"),     mix_labels)
         np.save(os.path.join(cache_path, f"track_{i:04d}_resyn_features.npy"), resyn_features)
+        np.save(os.path.join(cache_path, f"track_{i:04d}_resyn_labels.npy"), resyn_labels)
     print(f"Saved {len(paired_tracks)} track pairs to {cache_path}")
 
 
@@ -329,10 +336,11 @@ def load_paired_tracks_from_cache(cache_path=TRAIN_FEATURES):
     n_tracks = len([f for f in os.listdir(cache_path) if f.endswith('_mix_features.npy')])
     paired_tracks = []
     for i in range(n_tracks):
-        mix_features   = np.load(os.path.join(cache_path, f"track_{i:04d}_mix_features.npy"))
-        labels: np.ndarray = np.load(os.path.join(cache_path, f"track_{i:04d}_labels.npy"))
+        mix_features = np.load(os.path.join(cache_path, f"track_{i:04d}_mix_features.npy"))
+        mix_labels = np.load(os.path.join(cache_path, f"track_{i:04d}_labels.npy"))
         resyn_features = np.load(os.path.join(cache_path, f"track_{i:04d}_resyn_features.npy"))
-        paired_tracks.append(((mix_features, labels), (resyn_features, labels.copy())))
+        resyn_labels = np.load(os.path.join(cache_path, f"track_{i:04d}_resyn_labels.npy"))
+        paired_tracks.append(((mix_features, mix_labels), (resyn_features, resyn_labels)))
     print(f"Loaded {len(paired_tracks)} track pairs from cache.")
     return paired_tracks
 

@@ -7,6 +7,7 @@ from utils.model import DrumCNN
 from utils.dataset_preparation import load_training_data, SR, N_FFT, HOP_LENGTH, N_MELS, TARGET_CLASSES
 import os
 from utils.DrumsDataset import DrumsDataset
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 CHECKPOINTS_FOLDER = 'checkpoints'
 
@@ -45,7 +46,7 @@ def evaluate(model: nn.Module, loader, criterion, device, threshold=0.5):
 
 
 def train(model, train_loader: DataLoader, val_loader: DataLoader, pos_weight,
-          n_epochs=100, lr=1e-3, device='cuda', patience=10):
+          n_epochs=100, lr=1e-3, device='cuda', patience=10, experiment_name: str = 'experiment'):
 
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -79,6 +80,18 @@ def train(model, train_loader: DataLoader, val_loader: DataLoader, pos_weight,
             best_val_loss = val_loss
             epochs_without_improvement = 0
             best_model_state = model.state_dict().copy()
+            # save checkpoint
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'context': train_loader.dataset.get_window_context(),
+                'n_mels': N_MELS,
+                'n_classes': len(TARGET_CLASSES),
+                'sr': SR,
+                'hop_length': HOP_LENGTH,
+                'n_fft': N_FFT,
+            }, os.path.join(CHECKPOINTS_FOLDER, 'epoch_{}_{}.pth'.format(epoch, experiment_name)))
+            print("Model saved to {}".format( os.path.join(CHECKPOINTS_FOLDER, 'drum_cnn_epoch_{}.pth'.format(epoch))))
+
         else:
             epochs_without_improvement += 1
             if epochs_without_improvement >= patience:
@@ -89,12 +102,38 @@ def train(model, train_loader: DataLoader, val_loader: DataLoader, pos_weight,
     return model
 
 
+def evaluate_detailed(model: torch.nn.Module, loader, device, thresholds=None):
+    if thresholds is None:
+        thresholds = np.array([0.5, 0.5, 0.5]) # for now fixed
+
+    model.eval()
+    all_preds, all_labels = [], []
+
+    with torch.no_grad():
+        for X_batch, y_batch in loader:
+            logits = model(X_batch.to(device))
+            probs  = torch.sigmoid(logits).cpu().numpy()
+            preds  = (probs > thresholds[np.newaxis, :]).astype(int)
+            all_preds.append(preds)
+            all_labels.append(y_batch.numpy())
+
+    all_preds  = np.concatenate(all_preds,  axis=0)
+    all_labels = np.concatenate(all_labels, axis=0)
+
+    print("\n=== Per-class evaluation ===")
+    for cls_idx, cls in enumerate(TARGET_CLASSES):
+        p  = precision_score(all_labels[:, cls_idx], all_preds[:, cls_idx], zero_division=0)
+        r  = recall_score(   all_labels[:, cls_idx], all_preds[:, cls_idx], zero_division=0)
+        f1 = f1_score(       all_labels[:, cls_idx], all_preds[:, cls_idx], zero_division=0)
+        print(f"  {cls:6s} — P: {p:.3f}  R: {r:.3f}  F1: {f1:.3f}")
+
+
 def main():
     # params
     window_context = 5
     n_workers = os.cpu_count() - 1  # leave one core free for the OS
     
-    experiment_name = "new2"
+    experiment_name = "final"
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
@@ -102,7 +141,7 @@ def main():
     # --- full training ---
     print("1) extracting features and labels from training data")
 
-    paired_tracks = load_training_data(max_elements=614, n_workers=n_workers, load_if_available=True)
+    paired_tracks = load_training_data(max_elements=614, n_workers=n_workers, load_if_available=False)
     
     print("2)  performing train test split")
 
@@ -146,14 +185,16 @@ def main():
 
     print("5) training")
     model = DrumCNN(n_mels=N_MELS, context=window_context, n_classes=3).to(device)
-    model = train(model, train_loader, val_loader, pos_weight,
-                  n_epochs=100, lr=1e-4, device=device, patience=10) # was 10, just for quick testing
+    model = train(model, train_loader, val_loader, pos_weight, n_epochs=100, 
+                  lr=1e-4, device=device, patience=10, experiment_name=experiment_name)
 
     print("\n=== Test set evaluation ===")
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     test_loss, test_f1 = evaluate(model, test_loader, criterion, device)
     print(f"Test loss: {test_loss:.4f} | "
           f"F1 kick: {test_f1[0]:.3f} snare: {test_f1[1]:.3f} hihat: {test_f1[2]:.3f}")
+    # 
+    evaluate_detailed(model, test_loader, device)
 
     torch.save({
         'model_state_dict': model.state_dict(),
@@ -163,8 +204,10 @@ def main():
         'sr': SR,
         'hop_length': HOP_LENGTH,
         'n_fft': N_FFT,
+        'n_tracks': len(paired_tracks),
+        'test_f1': test_f1,
     }, os.path.join(CHECKPOINTS_FOLDER, 'drum_cnn_{}.pth'.format(experiment_name)))
-    print("Model saved to drum_cnn.pth")
+    print("Model saved to {}".format(os.path.join(CHECKPOINTS_FOLDER, 'drum_cnn_{}.pth'.format(experiment_name))))
 
 if __name__ == "__main__":
     main()

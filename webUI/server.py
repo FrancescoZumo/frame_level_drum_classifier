@@ -11,7 +11,7 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
 
-# load model
+# Here model parameters are hardcoded to make this folder portable
 SESSION = ort.InferenceSession("drum_cnn.onnx", providers=["CPUExecutionProvider"])
 CONTEXT  = 5
 SR       = 22050
@@ -27,6 +27,7 @@ async def transcribe(file: UploadFile):
         tmp.write(await file.read())
         tmp_path = tmp.name
     try:
+        # Feature Extraction like during training
         y, _ = librosa.load(tmp_path, sr=SR, mono=True)
         mel     = librosa.feature.melspectrogram(y=y, sr=SR, n_fft=N_FFT,
                                                   hop_length=HOP, n_mels=N_MELS)
@@ -42,14 +43,16 @@ async def transcribe(file: UploadFile):
         windows = sliding_window_view(fp, 2*CONTEXT+1, axis=2)
         windows = windows.transpose(2, 0, 3, 1).astype(np.float32)
 
+        # inference with onnx with big batch size to improve computation
         all_probs = []
         for i in range(0, T, 4096):
             batch  = windows[i:i+4096]
-            logits = SESSION.run(None, {"input": batch})[0]
-            all_probs.append(1 / (1 + np.exp(-logits)))
+            logits = SESSION.run(None, {"input": batch})[0] 
+            all_probs.append(1 / (1 + np.exp(-logits))) # sigmoid computation since it was not included in architecture
         probs = np.concatenate(all_probs, axis=0)
         preds = (probs > 0.5).astype(np.float32)
-
+        
+        # convert preditions to onsets
         onsets = {cls: [] for cls in CLASSES}
         for cls_idx, cls in enumerate(CLASSES):
             col = preds[:, cls_idx]

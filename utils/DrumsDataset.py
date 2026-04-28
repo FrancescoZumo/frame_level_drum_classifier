@@ -61,6 +61,10 @@ class DrumsDataset(Dataset):
                 torch.from_numpy(labels[frame_idx].copy()).float())
 
 
-
+    def get_window_context(self):
+        return self.context
+    
+    def get_n_training_tracks(self):
+        return len(self.tracks)
     
     

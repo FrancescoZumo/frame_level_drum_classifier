@@ -13,7 +13,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"],
 
 # Here model parameters are hardcoded to make this folder portable
 SESSION = ort.InferenceSession("drum_cnn.onnx", providers=["CPUExecutionProvider"])
-CONTEXT  = 5
+CONTEXT  = 3
 SR       = 22050
 HOP      = 256
 N_FFT    = 1024

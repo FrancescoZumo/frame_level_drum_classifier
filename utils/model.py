@@ -25,21 +25,21 @@ class DrumCNN(nn.Module):
             nn.Conv2d(3, 16, kernel_size=(3, 3), padding=1),
             nn.BatchNorm2d(16),
             nn.ReLU(),
-            nn.MaxPool2d((1, 2)),  # pool only frequency axis → (16, 7, 48)
+            nn.MaxPool2d((1, 2)),  # pool only frequency axis --> (16, 7, 48)
             nn.Dropout2d(0.2),
             
             # Block 2
             nn.Conv2d(16, 32, kernel_size=(3, 3), padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.MaxPool2d((1, 2)),  # → (32, 7, 24)
+            nn.MaxPool2d((1, 2)),  # (32, 7, 24)
             nn.Dropout2d(0.2),
             
             # Block 3
             nn.Conv2d(32, 64, kernel_size=(3, 3), padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.MaxPool2d((1, 2)),  # → (64, 7, 12)
+            nn.MaxPool2d((1, 2)),  # (64, 7, 12)
             nn.Dropout2d(0.2),
         )
 
@@ -49,7 +49,7 @@ class DrumCNN(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.3), 
             nn.Linear(128, n_classes)
-            # no sigmoid here — BCEWithLogitsLoss expects raw logits
+            # no sigmoid here, BCEWithLogitsLoss expects raw logits
         )
 
     def forward(self, x):

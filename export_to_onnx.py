@@ -7,7 +7,7 @@ from train import CHECKPOINTS_FOLDER
 def export_to_onnx(checkpoint_path: str, output_path: str = 'drum_cnn.onnx'):
     
     device = 'cpu'  # always export on CPU
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     
     # read params from checkpoint
     context   = checkpoint['context']
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("checkpoint", type=str, nargs='?', help="Path to .pth checkpoint", \
-                        default=os.path.join(CHECKPOINTS_FOLDER, "epoch_19_new2.pth"))
+                        default=os.path.join(CHECKPOINTS_FOLDER, "drum_cnn_final.pth"))
     parser.add_argument("--output", type=str, default=os.path.join("webUI", "drum_cnn.onnx"))
     args = parser.parse_args()
 

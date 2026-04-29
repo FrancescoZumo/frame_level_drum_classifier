@@ -12,6 +12,7 @@ The training was performed on a dataset of audio recordings with drums class-lev
 This was modeled as a binary classification problem with three independent predictions at each frame (kick, snare, hi-hat), since the three hits can occour simultaneously.
 
 
+
 ## Training Dataset
  - STAR Dataset, https://zenodo.org/records/15690078.
 Among all analyzed options, this dataset provides drums annotations for both drums only recordings and complete song mix. It was interesting for making experiments with multiple approaches.
@@ -64,27 +65,27 @@ It receives 4D inputs with dimensions (BATCH, CHANNELS, CONTEXT_WINDOW, MELS)
 ## Evaluation results
 
 P: Precision
+
 R: Recall
+
 F1: F1-Score
 
-### Experiment 1: 
+### Training Loss
 ```
-=== Test set evaluation ===
-Test loss: 0.2286 | F1 kick: 0.835 snare: 0.648 hihat: 0.627
-
-=== Per-class evaluation ===
-  kick   — P: 0.734  R: 0.968  F1: 0.835
-  snare  — P: 0.486  R: 0.971  F1: 0.648
-  hihat  — P: 0.483  R: 0.896  F1: 0.627
+Epoch 001 | train_loss: 0.0982 | val_loss: 0.0907 | F1 kick: 0.844 snare: 0.753 hihat: 0.768
+Epoch 002 | train_loss: 0.0719 | val_loss: 0.0824 | F1 kick: 0.867 snare: 0.780 hihat: 0.783
+Epoch 003 | train_loss: 0.0665 | val_loss: 0.0791 | F1 kick: 0.874 snare: 0.794 hihat: 0.793
+Epoch 004 | train_loss: 0.0635 | val_loss: 0.0761 | F1 kick: 0.878 snare: 0.806 hihat: 0.799
+Epoch 005 | train_loss: 0.0615 | val_loss: 0.0750 | F1 kick: 0.881 snare: 0.815 hihat: 0.801
+Epoch 006 | train_loss: 0.0599 | val_loss: 0.0734 | F1 kick: 0.884 snare: 0.818 hihat: 0.805
+...
+TODO once training finalized
 ```
 
 #### Discussion
-Although Kick predictions are acceptable, there is an extreme tendency to recall. 
-The CNN during training learned to prefer false positives to false negatives. 
-In the next experiment I will try to reduce the positional weights to the three classes in order to reduce this issue.
-
-### Experiment 2: 
-Training ...
+Kick predictions show the best performance among three classes, while hihats are the least precise class.
+One reason may be that other drum instruments overlap in frequency domain with hihats (i.e. cymbals) and their onset and timbre are relatively similar.
+Additionally, the kick's frequency band is the most separable from other instruments, hence this for sure contributed to this result.
 
 ## Setup instructions
 ### Install requirements
@@ -116,6 +117,38 @@ python train.py
 ```
 python export_to_onnx.py [path_to_checkpoint_file.pth]
 ```
+
+## Previous Experiments
+
+### Experiment 1: 
+```
+=== Test set evaluation ===
+Test loss: 0.2286 | F1 kick: 0.835 snare: 0.648 hihat: 0.627
+
+=== Per-class evaluation ===
+  kick   — P: 0.734  R: 0.968  F1: 0.835
+  snare  — P: 0.486  R: 0.971  F1: 0.648
+  hihat  — P: 0.483  R: 0.896  F1: 0.627
+```
+
+#### Discussion
+Although Kick predictions are acceptable, there is an extreme tendency to recall. 
+The CNN during training learned to prefer false positives to false negatives. 
+In the next experiment I will try to reduce or remove the positional weights computed for the Binary Cross Entropy Loss.
+
+### Experiment 2: 
+```
+=== Test set evaluation ===
+Test loss: 0.1209 | F1 kick: 0.882 snare: 0.794 hihat: 0.694
+
+=== Per-class evaluation ===
+  kick   — P: 0.831  R: 0.938  F1: 0.882
+  snare  — P: 0.697  R: 0.923  F1: 0.794
+  hihat  — P: 0.605  R: 0.815  F1: 0.694
+```
+#### Discussion
+In this experiment a square root was applied to the original positional weights of each class. 
+This result demonstrated their negative influence on this task, hence for the final version they will be removed.
 
 ## Possible Improvements
 - Dataset audio samples belong to multiple classes (Drum kit, playing style). I should balance their presence equally in train val and test sets.

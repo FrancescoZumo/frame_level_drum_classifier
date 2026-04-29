@@ -131,10 +131,10 @@ def transcribe(audio_path, checkpoint_path, output_path, threshold=0.5, device='
     model, context = load_model(checkpoint_path, device)
 
 
-    from torchinfo import summary
+    # from torchinfo import summary
 
-    summary(model, (4096, 3, 11, 96))
-    #exit(0)
+    # summary(model, (4096, 3, 11, 96))
+    # exit(0)
 
     print("Extracting features...")
     features, duration, original_audio = extract_features(audio_path)
@@ -158,8 +158,8 @@ if __name__ == "__main__":
     import time
     start = time.time()
     parser = argparse.ArgumentParser(description="Drum transcription inference")
-    parser.add_argument("audio", nargs='?', type=str, help="Path to input audio file", default=os.path.join(INFERENCE_FOLDER, "GrooveDrum.mp3"))
-    parser.add_argument("checkpoint", nargs='?', type=str, help="Path to model checkpoint (.pth)", default=os.path.join(CHECKPOINTS_FOLDER, "epoch_19_new2.pth"))
+    parser.add_argument("audio", nargs='?', type=str, help="Path to input audio file", default=os.path.join(INFERENCE_FOLDER, "HighwaytoHell.mp3"))
+    parser.add_argument("checkpoint", nargs='?', type=str, help="Path to model checkpoint (.pth)", default=os.path.join(CHECKPOINTS_FOLDER, "epoch_34_new2.pth"))
     parser.add_argument("output", nargs='?', type=str, help="Path to output audio file (.wav)", default=os.path.join(CHECKPOINTS_FOLDER, "test.wav"))
     parser.add_argument("--threshold", type=float, default=0.5, help="Detection threshold")
     args = parser.parse_args()

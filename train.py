@@ -130,7 +130,7 @@ def evaluate_detailed(model: torch.nn.Module, loader, device, thresholds=None):
 
 def main():
     # params
-    window_context = 5
+    window_context = 3
     n_workers = os.cpu_count() - 1  # leave one core free for the OS
     
     experiment_name = "final"
@@ -186,7 +186,7 @@ def main():
     print("5) training")
     model = DrumCNN(n_mels=N_MELS, context=window_context, n_classes=3).to(device)
     model = train(model, train_loader, val_loader, pos_weight, n_epochs=100, 
-                  lr=1e-4, device=device, patience=10, experiment_name=experiment_name)
+                  lr=1e-3, device=device, patience=5, experiment_name=experiment_name)
 
     print("\n=== Test set evaluation ===")
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)

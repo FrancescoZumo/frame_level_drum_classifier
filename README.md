@@ -67,7 +67,8 @@ P: Precision
 R: Recall
 F1: F1-Score
 
-Experiment 1: 
+### Experiment 1: 
+```
 === Test set evaluation ===
 Test loss: 0.2286 | F1 kick: 0.835 snare: 0.648 hihat: 0.627
 
@@ -75,13 +76,15 @@ Test loss: 0.2286 | F1 kick: 0.835 snare: 0.648 hihat: 0.627
   kick   — P: 0.734  R: 0.968  F1: 0.835
   snare  — P: 0.486  R: 0.971  F1: 0.648
   hihat  — P: 0.483  R: 0.896  F1: 0.627
+```
 
-Discussion
+#### Discussion
 Although Kick predictions are acceptable, there is an extreme tendency to recall. 
 The CNN during training learned to prefer false positives to false negatives. 
 In the next experiment I will try to reduce the positional weights to the three classes in order to reduce this issue.
 
-Experiment 2: Training ...
+### Experiment 2: 
+Training ...
 
 ## Setup instructions
 ### Install requirements

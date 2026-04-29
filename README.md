@@ -5,16 +5,12 @@ The goal of this project is to transcribe the kicks, snares and hihats from any 
 
 I trained a 4D CNN that receives mel spectrograms as input feature and outputs probabilities used to predict the presence or absence of each class at every frame.
 
-The temporal resolution of this approach was set to 10.7ms (i.e. STFT with 256 hop size on 22050Hz audio). 
+The temporal resolution of this approach was set to 11.7ms (i.e. STFT with 256 hop size on 22050Hz audio). 
 
-The training was performed on a dataset with the following specifications:
-- 614 full song mixes, coupled with ground truth, frame level annotations
-- 614 drums only songs, coupled with ground truth, frame level annotations
-Each song in the first group has its correspondent in the second one.
+The training was performed on a dataset of audio recordings with drums class-level annotations, with temporal resolution of ~10ms:
 
-The combination of the two was used to train the CNN.
+This was modeled as a binary classification problem with three independent predictions at each frame (kick, snare, hi-hat), since the three hits can occour simultaneously.
 
-Class level F1 Score was the main evaluation metric on the test set.
 
 ## Training Dataset
  - STAR Dataset, https://zenodo.org/records/15690078.
@@ -29,7 +25,7 @@ Each song in the first group has its correspondent in the second one.
 The combination of the two was used to train the CNN.
 
 ### Dataset Annotations
-The dataset provides annotations for 18 classes. I foolowed the mapping proposed by the authors to convert them to 3.
+The dataset provides annotations for 18 classes. I foolowed the mapping proposed by the authors to reduce them to 3.
 ```
 # Map STAR classes to only Three classes: Kick, Snare, Hi-hat
 # see https://transactions.ismir.net/articles/244/files/6888ab991b2f2.pdf page 255 for reference to names mapping
@@ -44,30 +40,48 @@ CLASS_MAP = {
 ```
 
 ## Feature Extraction
-- I chose mel-spectrograms as main feature, as long as their 1st and 2nd derivative computed across time axis.
+- I chose mel-spectrograms as main feature, as well as their 1st and 2nd derivative computed across time axis.
 Together they are fed as a 3-channel feature to the CNN.
 
 - I used the following parameters for computing STFT and mel spectrograms:
 ```
 SR = 22050         # captures the necessary frequency range for drums, though certain papers even resample down to 16KHz
-HOP_LENGTH = 256   # determines ~10.7 ms time resolution
+HOP_LENGTH = 256   # determines ~11.7 ms time resolution
 N_MELS = 96        # usually 80 or 96 are standard choices
 N_FFT = 1024       # it determines ~46 ms time resolution and ~21Hz freq resolution
 ```
 
 ## Model architecture
-I chose to implement a simple, lightweight CNN, starting from what was used in paper https://ismir2025program.ismir.net/poster_130.html 
+I chose to implement a lightweight CNN, starting from what was used in paper https://ismir2025program.ismir.net/poster_130.html 
 
 The CNN comprises 3 convolutional blocks and 2 dense layers.
 It receives 4D inputs with dimensions (BATCH, CHANNELS, CONTEXT_WINDOW, MELS)
 
-- with respect to reference paper, I reduced the the number of convolutional blocks from 5 to 3, and the context window from 25 to 11, to reduce model size.
+- with respect to reference paper, I reduced the the number of convolutional blocks from 5 to 3, and the context window from 25 to 7, to reduce model size.
 
-- The model's number of params is 1,105,667.
+- The model's number of params is 712,451.
 
 ## Evaluation results
-TODO F1 Score on test set
-TODO Per-class precision and recall on test set
+
+P: Precision
+R: Recall
+F1: F1-Score
+
+Experiment 1: 
+=== Test set evaluation ===
+Test loss: 0.2286 | F1 kick: 0.835 snare: 0.648 hihat: 0.627
+
+=== Per-class evaluation ===
+  kick   — P: 0.734  R: 0.968  F1: 0.835
+  snare  — P: 0.486  R: 0.971  F1: 0.648
+  hihat  — P: 0.483  R: 0.896  F1: 0.627
+
+Discussion
+Although Kick predictions are acceptable, there is an extreme tendency to recall. 
+The CNN during training learned to prefer false positives to false negatives. 
+In the next experiment I will try to reduce the positional weights to the three classes in order to reduce this issue.
+
+Experiment 2: Training ...
 
 ## Setup instructions
 ### Install requirements

@@ -70,22 +70,28 @@ R: Recall
 
 F1: F1-Score
 
-### Training Loss
+### Results
 ```
-Epoch 001 | train_loss: 0.0982 | val_loss: 0.0907 | F1 kick: 0.844 snare: 0.753 hihat: 0.768
-Epoch 002 | train_loss: 0.0719 | val_loss: 0.0824 | F1 kick: 0.867 snare: 0.780 hihat: 0.783
-Epoch 003 | train_loss: 0.0665 | val_loss: 0.0791 | F1 kick: 0.874 snare: 0.794 hihat: 0.793
-Epoch 004 | train_loss: 0.0635 | val_loss: 0.0761 | F1 kick: 0.878 snare: 0.806 hihat: 0.799
-Epoch 005 | train_loss: 0.0615 | val_loss: 0.0750 | F1 kick: 0.881 snare: 0.815 hihat: 0.801
-Epoch 006 | train_loss: 0.0599 | val_loss: 0.0734 | F1 kick: 0.884 snare: 0.818 hihat: 0.805
-...
-TODO once training finalized
+
+Early stopping at epoch:
+Epoch 026 | train_loss: 0.0517 | val_loss: 0.0668 | F1 kick: 0.898 snare: 0.841 hihat: 0.821
+
+
+=== Test set evaluation ===
+Test loss: 0.0605 | F1 kick: 0.905 snare: 0.847 hihat: 0.712
+
+=== Per-class evaluation ===
+  kick   — P: 0.924  R: 0.886  F1: 0.905
+  snare  — P: 0.856  R: 0.838  F1: 0.847
+  hihat  — P: 0.771  R: 0.662  F1: 0.712
 ```
 
 #### Discussion
 Kick predictions show the best performance among three classes, while hihats are the least precise class.
 One reason may be that other drum instruments overlap in frequency domain with hihats (i.e. cymbals) and their onset and timbre are relatively similar.
 Additionally, the kick's frequency band is the most separable from other instruments, hence this for sure contributed to this result.
+Finally, hihats in particular would benefit by providing a positional weight (slightly greater than 1) to their class while computing the binary cross entropy loss,
+so that the recall could increase. 
 
 ## Setup instructions
 ### Install requirements

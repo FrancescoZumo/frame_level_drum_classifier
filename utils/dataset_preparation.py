@@ -337,7 +337,7 @@ def load_paired_tracks_from_cache(cache_path=TRAIN_FEATURES):
     paired_tracks = []
     for i in range(n_tracks):
         mix_features = np.load(os.path.join(cache_path, f"track_{i:04d}_mix_features.npy"))
-        mix_labels = np.load(os.path.join(cache_path, f"track_{i:04d}_labels.npy"))
+        mix_labels = np.load(os.path.join(cache_path, f"track_{i:04d}_mix_labels.npy"))
         resyn_features = np.load(os.path.join(cache_path, f"track_{i:04d}_resyn_features.npy"))
         resyn_labels = np.load(os.path.join(cache_path, f"track_{i:04d}_resyn_labels.npy"))
         paired_tracks.append(((mix_features, mix_labels), (resyn_features, resyn_labels)))

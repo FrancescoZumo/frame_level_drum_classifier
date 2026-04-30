@@ -15,7 +15,8 @@ def compute_pos_weights(y_train):
     """Compute positive weights for BCEWithLogitsLoss to handle class imbalance."""
     n_neg = (y_train == 0).sum(axis=0)
     n_pos = (y_train == 1).sum(axis=0)
-    pos_weight = n_neg / np.maximum(n_pos, 1)  # avoid division by zero
+    # pos_weight =  np.log1p(n_neg / np.maximum(n_pos, 1)) # I added log to try to reduce tendency to high recall
+    pos_weight = [1,1,1]
     print(f"Pos weights — kick: {pos_weight[0]:.1f}, snare: {pos_weight[1]:.1f}, hihat: {pos_weight[2]:.1f}")
     return torch.tensor(pos_weight, dtype=torch.float32)
 
@@ -133,7 +134,7 @@ def main():
     window_context = 3
     n_workers = os.cpu_count() - 1  # leave one core free for the OS
     
-    experiment_name = "final"
+    experiment_name = "no_pos_weights"
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
@@ -141,7 +142,7 @@ def main():
     # --- full training ---
     print("1) extracting features and labels from training data")
 
-    paired_tracks = load_training_data(max_elements=614, n_workers=n_workers, load_if_available=False)
+    paired_tracks = load_training_data(max_elements=614, n_workers=n_workers, load_if_available=True)
     
     print("2)  performing train test split")
 

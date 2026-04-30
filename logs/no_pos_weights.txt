@@ -1,0 +1,58 @@
+5) training
+Epoch 001 | train_loss: 0.0982 | val_loss: 0.0907 | F1 kick: 0.844 snare: 0.753 hihat: 0.768
+Model saved to checkpoints\drum_cnn_epoch_0.pth
+Epoch 002 | train_loss: 0.0719 | val_loss: 0.0824 | F1 kick: 0.867 snare: 0.780 hihat: 0.783
+Model saved to checkpoints\drum_cnn_epoch_1.pth
+Epoch 003 | train_loss: 0.0665 | val_loss: 0.0791 | F1 kick: 0.874 snare: 0.794 hihat: 0.793
+Model saved to checkpoints\drum_cnn_epoch_2.pth
+Epoch 004 | train_loss: 0.0635 | val_loss: 0.0761 | F1 kick: 0.878 snare: 0.806 hihat: 0.799
+Model saved to checkpoints\drum_cnn_epoch_3.pth
+Epoch 005 | train_loss: 0.0615 | val_loss: 0.0750 | F1 kick: 0.881 snare: 0.815 hihat: 0.801
+Model saved to checkpoints\drum_cnn_epoch_4.pth
+Epoch 006 | train_loss: 0.0599 | val_loss: 0.0734 | F1 kick: 0.884 snare: 0.818 hihat: 0.805
+Model saved to checkpoints\drum_cnn_epoch_5.pth
+Epoch 007 | train_loss: 0.0588 | val_loss: 0.0723 | F1 kick: 0.887 snare: 0.821 hihat: 0.808
+Model saved to checkpoints\drum_cnn_epoch_6.pth
+Epoch 008 | train_loss: 0.0578 | val_loss: 0.0719 | F1 kick: 0.886 snare: 0.827 hihat: 0.808
+Model saved to checkpoints\drum_cnn_epoch_7.pth
+Epoch 009 | train_loss: 0.0570 | val_loss: 0.0707 | F1 kick: 0.891 snare: 0.830 hihat: 0.811
+Model saved to checkpoints\drum_cnn_epoch_8.pth
+Epoch 010 | train_loss: 0.0563 | val_loss: 0.0715 | F1 kick: 0.890 snare: 0.831 hihat: 0.810
+Epoch 011 | train_loss: 0.0558 | val_loss: 0.0709 | F1 kick: 0.891 snare: 0.823 hihat: 0.814
+Epoch 012 | train_loss: 0.0553 | val_loss: 0.0693 | F1 kick: 0.891 snare: 0.838 hihat: 0.814
+Model saved to checkpoints\drum_cnn_epoch_11.pth
+Epoch 013 | train_loss: 0.0549 | val_loss: 0.0698 | F1 kick: 0.892 snare: 0.831 hihat: 0.814
+Epoch 014 | train_loss: 0.0545 | val_loss: 0.0692 | F1 kick: 0.893 snare: 0.835 hihat: 0.817
+Model saved to checkpoints\drum_cnn_epoch_13.pth
+Epoch 015 | train_loss: 0.0541 | val_loss: 0.0687 | F1 kick: 0.892 snare: 0.838 hihat: 0.812
+Model saved to checkpoints\drum_cnn_epoch_14.pth
+Epoch 016 | train_loss: 0.0538 | val_loss: 0.0690 | F1 kick: 0.893 snare: 0.834 hihat: 0.813
+Epoch 017 | train_loss: 0.0535 | val_loss: 0.0684 | F1 kick: 0.896 snare: 0.839 hihat: 0.817
+Model saved to checkpoints\drum_cnn_epoch_16.pth
+Epoch 018 | train_loss: 0.0533 | val_loss: 0.0688 | F1 kick: 0.895 snare: 0.837 hihat: 0.817
+Epoch 019 | train_loss: 0.0531 | val_loss: 0.0679 | F1 kick: 0.896 snare: 0.833 hihat: 0.818
+Model saved to checkpoints\drum_cnn_epoch_18.pth
+Epoch 020 | train_loss: 0.0528 | val_loss: 0.0684 | F1 kick: 0.895 snare: 0.839 hihat: 0.817
+Epoch 021 | train_loss: 0.0526 | val_loss: 0.0683 | F1 kick: 0.895 snare: 0.839 hihat: 0.818
+Epoch 022 | train_loss: 0.0524 | val_loss: 0.0677 | F1 kick: 0.896 snare: 0.845 hihat: 0.818
+Model saved to checkpoints\drum_cnn_epoch_21.pth
+Epoch 023 | train_loss: 0.0522 | val_loss: 0.0681 | F1 kick: 0.893 snare: 0.841 hihat: 0.819
+Epoch 024 | train_loss: 0.0520 | val_loss: 0.0682 | F1 kick: 0.896 snare: 0.843 hihat: 0.817
+Epoch 025 | train_loss: 0.0519 | val_loss: 0.0689 | F1 kick: 0.895 snare: 0.840 hihat: 0.815
+Epoch 026 | train_loss: 0.0517 | val_loss: 0.0668 | F1 kick: 0.898 snare: 0.841 hihat: 0.821
+Model saved to checkpoints\drum_cnn_epoch_25.pth
+Epoch 027 | train_loss: 0.0516 | val_loss: 0.0673 | F1 kick: 0.897 snare: 0.847 hihat: 0.820
+Epoch 028 | train_loss: 0.0514 | val_loss: 0.0671 | F1 kick: 0.898 snare: 0.845 hihat: 0.821
+Epoch 029 | train_loss: 0.0513 | val_loss: 0.0669 | F1 kick: 0.897 snare: 0.842 hihat: 0.821
+Epoch 030 | train_loss: 0.0511 | val_loss: 0.0671 | F1 kick: 0.898 snare: 0.844 hihat: 0.819
+Epoch 031 | train_loss: 0.0510 | val_loss: 0.0673 | F1 kick: 0.897 snare: 0.849 hihat: 0.821
+Early stopping at epoch 31
+
+=== Test set evaluation ===
+Test loss: 0.0605 | F1 kick: 0.905 snare: 0.847 hihat: 0.712
+
+=== Per-class evaluation ===
+  kick   — P: 0.924  R: 0.886  F1: 0.905
+  snare  — P: 0.856  R: 0.838  F1: 0.847
+  hihat  — P: 0.771  R: 0.662  F1: 0.712
+Model saved to checkpoints\drum_cnn_no_pos_weights.pth

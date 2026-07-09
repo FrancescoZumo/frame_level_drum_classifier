@@ -3,7 +3,7 @@ The goal of this project is to transcribe the kicks, snares and hihats from any 
 
 ## Method Overview
 
-I trained a 4D CNN that receives mel spectrograms as input feature and outputs probabilities used to predict the presence or absence of each class at every frame.
+I trained a 3D CNN that receives mel spectrograms as input feature and outputs probabilities used to predict the presence or absence of each class at every frame.
 
 The temporal resolution of this approach was set to 11.7ms (i.e. STFT with 256 hop size on 22050Hz audio). 
 
